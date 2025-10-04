@@ -27,7 +27,7 @@ const SpeedTracker = () => {
                 },
                 (position) => {
                     const speedInMetersPerSecond = position.coords.speed;
-                    setSpeed(speedInMetersPerSecond * 3.6);
+                    setSpeed(speedInMetersPerSecond);
                 },
                 (error) => {
                     setErrorMsg(error.message);
@@ -44,7 +44,7 @@ const SpeedTracker = () => {
             {errorMsg ? (
                 <Text style={styles.error}>{errorMsg}</Text>
             ) : (
-                <Text style={styles.speed}>{speed.toFixed(2)} км/год</Text>
+                <Text style={styles.speed}>{speed.toFixed(2)} м/сек</Text>
             )}
         </View>
     );
