@@ -105,11 +105,6 @@ const SpeedTracker = () => {
                 <Text style={styles.speed}>{speed.toFixed(2)} M/S</Text>
             )}
             {speedBreak && <Text style={styles.speedError}>⚠️ Перевищено допустиму швидкість!</Text>}
-            <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65 }}>
-                <Text style={styles.stats}>Time: {timePassed}s</Text>
-                <Text style={styles.stats}>Distance:</Text>
-            </View>
-
             <TouchableOpacity
                 onPress={() => setStarted(!started)}
                 style={styles.startBtn}
@@ -126,6 +121,36 @@ const SpeedTracker = () => {
                 </View>
             </TouchableOpacity>
 
+            <View style={{ marginBottom: -160 }}>
+                <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65 }}>
+                    <View style={styles.row}>
+                        <View style={styles.statContainer}>
+                            <Text style={styles.statHightlighted}>{timePassed}s</Text>
+                            <Text style={styles.statText}>Time</Text>
+                        </View>
+                    </View>
+                    <View style={styles.row}>
+                        <View style={styles.statContainer}>
+                            <Text style={styles.statHightlighted}>m/s</Text>
+                            <Text style={styles.statText}>Top speed</Text>
+                        </View>
+                    </View>
+                </View>
+                <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65 }}>
+                    <View style={styles.row}>
+                        <View style={styles.statContainer}>
+                            <Text style={styles.statHightlighted}>m/s</Text>
+                            <Text style={styles.statText}>Avarage speed</Text>
+                        </View>
+                    </View>
+                    <View style={styles.row}>
+                        <View style={styles.statContainer}>
+                            <Text style={styles.statHightlighted}>km</Text>
+                            <Text style={styles.statText}>Distance</Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
         </View>
     );
 };
@@ -155,7 +180,6 @@ const styles = StyleSheet.create({
         marginLeft: 5,
     },
     startBtn: {
-        marginTop: 30,
         width: 220,
         height: 60,
         backgroundColor: '#ff0e0eff',
@@ -163,9 +187,34 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
+        marginBottom: 50
     },
-
-    stats: { fontSize: 18, marginBottom: 10, color: '#f1f1f1ff' },
+    row: {
+        flexDirection: "row",
+        justifyContent: "center",
+        marginBottom: 20,
+    },
+    statContainer: {
+        flexDirection: "column",
+        alignItems: "center",
+        marginHorizontal: 20,
+    },
+    statText: {
+        fontSize: 18,
+        color: "#d3d3d3ff",
+        marginVertical: 4,
+        fontWeight: "600",
+    },
+    statHightlighted: {
+        fontSize: 32,
+        fontWeight: "bold",
+        color: "#ff0e0ed5",
+    },
+    statContainer: {
+        flexDirection: 'column',
+        display: 'flex',
+        alignItems: 'center',
+    }
 
 });
 
