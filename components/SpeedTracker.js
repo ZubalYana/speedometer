@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'rea
 import * as Location from 'expo-location';
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts, GajrajOne_400Regular } from "@expo-google-fonts/gajraj-one";
+import { MaterialIcons } from '@expo/vector-icons';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -104,10 +105,22 @@ const SpeedTracker = () => {
                 <Text style={styles.stats}>Distance:</Text>
             </View>
 
-
-            <TouchableOpacity onPress={() => setStarted(!started)} style={styles.startBtn}>
-                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#f1f1f1ff' }}>{started ? 'PAUSE' : 'START'}</Text>
+            <TouchableOpacity
+                onPress={() => setStarted(!started)}
+                style={styles.startBtn}
+                activeOpacity={0.8}
+            >
+                <View style={styles.btnContent}>
+                    <MaterialIcons
+                        name={started ? "pause" : "play-arrow"}
+                        size={43}
+                        color="#f1f1f1ff"
+                        style={{ marginLeft: -5 }}
+                    />
+                    <Text style={styles.btnText}>{started ? "PAUSE" : "START"}</Text>
+                </View>
             </TouchableOpacity>
+
         </View>
     );
 };
@@ -125,16 +138,28 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 5,
     },
-    startBtn: {
-        marginTop: 30,
-        width: 200,
-        height: 50,
-        backgroundColor: '#ff0e0eff',
-        padding: 10,
-        borderRadius: 5,
+    btnContent: {
+        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
     },
+    btnText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#f1f1f1ff',
+        marginLeft: 5,
+    },
+    startBtn: {
+        marginTop: 30,
+        width: 220,
+        height: 60,
+        backgroundColor: '#ff0e0eff',
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+    },
+
     stats: { fontSize: 18, marginBottom: 10, color: '#f1f1f1ff' },
 
 });
