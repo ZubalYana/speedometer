@@ -46,7 +46,12 @@ const SpeedTracker = () => {
                 },
                 (position) => {
                     const speedInMetersPerSecond = position.coords.speed;
-                    setSpeed(speedInMetersPerSecond);
+                    if (speedInMetersPerSecond < 0) {
+                        setSpeed(0)
+                    } else {
+                        setSpeed(speedInMetersPerSecond);
+                    }
+
                 },
                 (error) => {
                     setErrorMsg(error.message);
@@ -100,7 +105,7 @@ const SpeedTracker = () => {
                 <Text style={styles.speed}>{speed.toFixed(2)} M/S</Text>
             )}
             {speedBreak && <Text style={styles.speedError}>⚠️ Перевищено допустиму швидкість!</Text>}
-            <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 60 }}>
+            <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65 }}>
                 <Text style={styles.stats}>Time: {timePassed}s</Text>
                 <Text style={styles.stats}>Distance:</Text>
             </View>
