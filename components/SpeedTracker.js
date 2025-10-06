@@ -82,8 +82,8 @@ const SpeedTracker = () => {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: speedBreak ? 'red' : '#f0f0f0ff' }]}>
-            <Text style={styles.highestSpeed}>
+        <View style={[styles.container, { backgroundColor: speedBreak ? 'red' : '#0f0f0fff' }]}>
+            {/* <Text style={styles.highestSpeed}>
                 Найвища швидкість:{' '}
                 <Text style={styles.highestSpeed_hightlight}>
                     {highestSpeed.toFixed(2)} м/сек
@@ -91,30 +91,33 @@ const SpeedTracker = () => {
             </Text>
             <TouchableOpacity onPress={() => setHighestSpeed(0)} style={styles.resetHighest}>
                 <Text>Скинути</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             {errorMsg ? (
                 <Text style={styles.error}>{errorMsg}</Text>
             ) : (
-                <Text style={styles.speed}>{speed.toFixed(2)} м/сек</Text>
+                <Text style={styles.speed}>{speed.toFixed(2)} M/S</Text>
             )}
-
             {speedBreak && <Text style={styles.speedError}>⚠️ Перевищено допустиму швидкість!</Text>}
+            <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 60 }}>
+                <Text style={styles.stats}>Time: {timePassed}s</Text>
+                <Text style={styles.stats}>Distance:</Text>
+            </View>
+
 
             <TouchableOpacity onPress={() => setStarted(!started)} style={styles.startBtn}>
-                <Text>{started ? 'Зупинити' : 'Почати'}</Text>
+                <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#f1f1f1ff' }}>{started ? 'PAUSE' : 'START'}</Text>
             </TouchableOpacity>
-            <Text style={styles.highestSpeed}>Час: {timePassed} сек</Text>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' },
-    speed: { fontSize: 48, fontWeight: 'bold', fontFamily: 'GajrajOne_400Regular' },
+    speed: { fontSize: 64, fontWeight: 'bold', fontFamily: 'GajrajOne_400Regular', color: '#f1f1f1ff' },
     error: { color: 'red', fontSize: 18, marginTop: 10 },
     speedError: { color: 'black', fontSize: 20, fontWeight: '600', marginTop: 10 },
-    highestSpeed: { fontSize: 18, marginBottom: 10 },
+    highestSpeed: { fontSize: 18, marginBottom: 10, color: '#f1f1f1ff' },
     highestSpeed_hightlight: { fontWeight: 'bold' },
     resetHighest: {
         marginVertical: 10,
@@ -123,11 +126,17 @@ const styles = StyleSheet.create({
         borderRadius: 5,
     },
     startBtn: {
-        marginVertical: 10,
-        backgroundColor: '#7a92ff',
+        marginTop: 30,
+        width: 200,
+        height: 50,
+        backgroundColor: '#ff0e0eff',
         padding: 10,
         borderRadius: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
+    stats: { fontSize: 18, marginBottom: 10, color: '#f1f1f1ff' },
+
 });
 
 export default SpeedTracker;
