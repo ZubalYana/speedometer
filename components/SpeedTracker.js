@@ -4,7 +4,7 @@ import * as Location from 'expo-location';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, GajrajOne_400Regular } from '@expo-google-fonts/gajraj-one';
 import { MaterialIcons } from '@expo/vector-icons';
-
+import Menu from './Menu';
 SplashScreen.preventAutoHideAsync();
 
 const haversineMeters = (lat1, lon1, lat2, lon2) => {
@@ -22,7 +22,6 @@ const haversineMeters = (lat1, lon1, lat2, lon2) => {
 
 const SpeedTracker = () => {
     const [fontsLoaded] = useFonts({ GajrajOne_400Regular });
-
     const [speed, setSpeed] = useState(0);
     const [highestSpeed, setHighestSpeed] = useState(0);
     const [errorMsg, setErrorMsg] = useState(null);
@@ -218,12 +217,13 @@ const SpeedTracker = () => {
                     </View>
                 </View>
             </View>
+            <Menu />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' },
+    container: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', position: 'relative' },
     speed: { fontSize: 64, fontWeight: 'bold', fontFamily: 'GajrajOne_400Regular', color: '#f1f1f1ff' },
     error: { color: 'red', fontSize: 18, marginTop: 10 },
     speedError: { color: 'black', fontSize: 20, fontWeight: '600', marginTop: 10 },
