@@ -154,7 +154,13 @@ const SpeedTracker = () => {
             {errorMsg ? (
                 <Text style={styles.error}>{errorMsg}</Text>
             ) : (
-                <Text style={styles.speed}>{speed.toFixed(2)} m/s</Text>
+                <Text style={styles.speed}>
+                    {speed < 1000 ?
+                        speed.toFixed(2) + 'm/s'
+                        :
+                        (speed / 1000).toFixed(2) + 'k/h'
+                    }
+                </Text>
             )}
 
             {speedBreak && <Text style={styles.speedError}>⚠️ Перевищено допустиму швидкість!</Text>}
@@ -179,13 +185,25 @@ const SpeedTracker = () => {
                         <Text style={styles.statText}>Time</Text>
                     </View>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>{highestSpeed.toFixed(2)} m/s</Text>
+                        <Text style={styles.statHightlighted}>
+                            {highestSpeed < 1000 ?
+                                highestSpeed.toFixed(2) + 'm/s'
+                                :
+                                (highestSpeed / 1000).toFixed(2) + 'k/h'
+                            }
+                        </Text>
                         <Text style={styles.statText}>Top speed</Text>
                     </View>
                 </View>
                 <View style={styles.statsRow}>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>{averageSpeed.toFixed(2)} m/s</Text>
+                        <Text style={styles.statHightlighted}>
+                            {averageSpeed < 1000 ?
+                                averageSpeed.toFixed(2) + 'm/s'
+                                :
+                                (averageSpeed / 1000).toFixed(2) + 'k/h'
+                            }
+                        </Text>
                         <Text style={styles.statText}>Average</Text>
                     </View>
                     <View style={styles.statContainer}>
