@@ -1,29 +1,45 @@
-import { useRef } from "react";
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-export default function Menu() {
+export default function Menu({ currentPage, onChangePage }) {
+    const menuItems = [
+        { key: 'speed', label: 'Speed', icon: 'speed' },
+        { key: 'statistic', label: 'Statistic', icon: 'bar-chart' },
+        { key: 'history', label: 'History', icon: 'history' },
+        { key: 'settings', label: 'Settings', icon: 'settings' },
+    ];
+
     return (
         <View style={styles.menu}>
-            <View style={styles.menuOption}>
-                <MaterialIcons name="speed" size={38} color="#f1f1f1ff" />
-                <Text style={{ color: '#f1f1f1ff', fontSize: 12 }}>Speed</Text>
-            </View>
-            <View style={styles.menuOption}>
-                <MaterialIcons name="bar-chart" size={38} color="#f1f1f1ff" />
-                <Text style={{ color: '#f1f1f1ff', fontSize: 12 }}>Statistic</Text>
-            </View>
-            <View style={styles.menuOption}>
-                <MaterialIcons name="history" size={38} color="#f1f1f1ff" />
-                <Text style={{ color: '#f1f1f1ff', fontSize: 12 }}>History</Text>
-            </View>
-            <View style={styles.menuOption}>
-                <MaterialIcons name="settings" size={38} color="#f1f1f1ff" />
-                <Text style={{ color: '#f1f1f1ff', fontSize: 12 }}>Settings</Text>
-            </View>
+            {menuItems.map((item) => {
+                const isActive = currentPage === item.key;
+                return (
+                    <TouchableOpacity
+                        key={item.key}
+                        onPress={() => onChangePage(item.key)}
+                        style={styles.menuOption}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialIcons
+                            name={item.icon}
+                            size={38}
+                            color={isActive ? '#ff0e0eff' : '#f1f1f1ff'}
+                        />
+                        <Text
+                            style={[
+                                styles.menuText,
+                                { color: isActive ? '#ff0e0eff' : '#f1f1f1ff' },
+                            ]}
+                        >
+                            {item.label}
+                        </Text>
+                    </TouchableOpacity>
+                );
+            })}
         </View>
-    )
+    );
 }
+
 const styles = StyleSheet.create({
     menu: {
         width: '100%',
@@ -33,13 +49,15 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         paddingTop: 10,
-        display: 'flex',
         flexDirection: 'row',
+        justifyContent: 'space-between',
         paddingHorizontal: 40,
-        justifyContent: 'space-between'
     },
     menuOption: {
         alignItems: 'center',
-        gap: 5
-    }
-})
+        gap: 5,
+    },
+    menuText: {
+        fontSize: 12,
+    },
+});

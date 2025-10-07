@@ -4,7 +4,6 @@ import * as Location from 'expo-location';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, GajrajOne_400Regular } from '@expo-google-fonts/gajraj-one';
 import { MaterialIcons } from '@expo/vector-icons';
-import Menu from './Menu';
 SplashScreen.preventAutoHideAsync();
 
 const haversineMeters = (lat1, lon1, lat2, lon2) => {
@@ -171,7 +170,7 @@ const SpeedTracker = () => {
                 </View>
             </TouchableOpacity>
 
-            <View style={{ marginBottom: -160 }}>
+            <View style={{ marginBottom: -100 }}>
                 <View style={styles.statsRow}>
                     <View style={styles.statContainer}>
                         <Text style={styles.statHightlighted}>
@@ -217,7 +216,6 @@ const SpeedTracker = () => {
                     </View>
                 </View>
             </View>
-            <Menu />
         </View>
     );
 };
