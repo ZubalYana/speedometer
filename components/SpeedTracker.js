@@ -183,7 +183,13 @@ const SpeedTracker = () => {
                         <Text style={styles.statText}>Average</Text>
                     </View>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>{(distance / 1000).toFixed(3)} km</Text>
+                        <Text style={styles.statHightlighted}>
+                            {distance < 100 ?
+                                distance.toFixed(2) + 'm'
+                                :
+                                (distance / 1000).toFixed(2) + 'km'
+                            }
+                        </Text>
                         <Text style={styles.statText}>Distance</Text>
                     </View>
                 </View>
