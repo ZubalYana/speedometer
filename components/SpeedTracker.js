@@ -169,7 +169,13 @@ const SpeedTracker = () => {
             <View style={{ marginBottom: -160 }}>
                 <View style={styles.statsRow}>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>{timePassed}s</Text>
+                        <Text style={styles.statHightlighted}>
+                            {timePassed < 60 ?
+                                timePassed + 's'
+                                :
+                                (timePassed / 60).toFixed(1) + 'min'
+                            }
+                        </Text>
                         <Text style={styles.statText}>Time</Text>
                     </View>
                     <View style={styles.statContainer}>
