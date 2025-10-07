@@ -1,82 +1,144 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
-import * as SplashScreen from "expo-splash-screen";
-import { useFonts, GajrajOne_400Regular } from "@expo-google-fonts/gajraj-one";
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, GajrajOne_400Regular } from '@expo-google-fonts/gajraj-one';
 import { MaterialIcons } from '@expo/vector-icons';
 
 SplashScreen.preventAutoHideAsync();
 
+const haversineMeters = (lat1, lon1, lat2, lon2) => {
+    const toRad = (v) => (v * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
+
 const SpeedTracker = () => {
-    const [fontsLoaded] = useFonts({
-        GajrajOne_400Regular,
-    });
+    const [fontsLoaded] = useFonts({ GajrajOne_400Regular });
 
     const [speed, setSpeed] = useState(0);
-    const [errorMsg, setErrorMsg] = useState(null);
-    const [speedBreak, setSpeedBreak] = useState(false);
     const [highestSpeed, setHighestSpeed] = useState(0);
+    const [errorMsg, setErrorMsg] = useState(null);
     const [started, setStarted] = useState(false);
     const [timePassed, setTimePassed] = useState(0);
+    const [speedBreak, setSpeedBreak] = useState(false);
     const [averageSpeed, setAverageSpeed] = useState(0);
+    const [distance, setDistance] = useState(0);
+    const locationSubscription = useRef(null);
+    const lastLocation = useRef(null);
+    const lastTimestamp = useRef(null);
 
     useEffect(() => {
-        if (fontsLoaded) {
-            SplashScreen.hideAsync();
-        }
+        if (fontsLoaded) SplashScreen.hideAsync();
     }, [fontsLoaded]);
 
     useEffect(() => {
-        const getLocationPermission = async () => {
+        (async () => {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 setErrorMsg('Permission to access location was denied');
-                return;
             }
-
-            startTracking();
-        };
-
-        const startTracking = async () => {
-            await Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.High,
-                    distanceInterval: 0.1,
-                    timeInterval: 1,
-                },
-                (position) => {
-                    const speedInMetersPerSecond = position.coords.speed;
-                    if (speedInMetersPerSecond < 0) {
-                        setSpeed(0)
-                    } else {
-                        setSpeed(speedInMetersPerSecond);
-                    }
-
-                },
-                (error) => {
-                    setErrorMsg(error.message);
-                }
-            );
-        };
-
-        getLocationPermission();
+        })();
     }, []);
 
     useEffect(() => {
-        if (speed > 1) setSpeedBreak(true);
-        else setSpeedBreak(false);
-    }, [speed]);
-
-    useEffect(() => {
-        if (speed > highestSpeed) setHighestSpeed(speed);
-    }, [speed]);
-
-    useEffect(() => {
+        let timer;
         if (started) {
-            const interval = setInterval(() => setTimePassed((t) => t + 1), 1000);
-            return () => clearInterval(interval);
+            startTracking();
+            timer = setInterval(() => setTimePassed((t) => t + 1), 1000);
+        } else {
+            stopTracking();
         }
+        return () => {
+            if (timer) clearInterval(timer);
+        };
     }, [started]);
+
+    useEffect(() => {
+        if (timePassed > 0) {
+            setAverageSpeed(distance / timePassed);
+        } else {
+            setAverageSpeed(0);
+        }
+    }, [distance, timePassed]);
+
+    const startTracking = async () => {
+        try {
+            if (locationSubscription.current) {
+                await locationSubscription.current.remove();
+                locationSubscription.current = null;
+            }
+
+            locationSubscription.current = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.Highest,
+                    distanceInterval: 1,
+                    timeInterval: 1000,
+                },
+                (position) => {
+                    if (!position || !position.coords) return;
+                    const { latitude, longitude, speed: rawSpeed } = position.coords;
+                    const nowTs = position.timestamp ?? Date.now();
+
+                    if (lastLocation.current && lastTimestamp.current && latitude != null && longitude != null) {
+                        const dist = haversineMeters(
+                            lastLocation.current.latitude,
+                            lastLocation.current.longitude,
+                            latitude,
+                            longitude
+                        );
+
+                        const deltaSec = (nowTs - lastTimestamp.current) / 1000;
+                        const safeDelta = deltaSec > 0 ? deltaSec : 1;
+
+                        if (dist > 0.5) {
+                            setDistance((d) => d + dist);
+                        }
+
+                        let calcSpeed = dist / safeDelta;
+                        const usedSpeed = (rawSpeed != null && rawSpeed >= 0) ? rawSpeed : calcSpeed;
+
+                        setSpeed(usedSpeed);
+                        setHighestSpeed((prev) => Math.max(prev, usedSpeed));
+                        setSpeedBreak(usedSpeed > 1);
+                    } else {
+                        const usedSpeed = (rawSpeed != null && rawSpeed >= 0) ? rawSpeed : 0;
+                        setSpeed(usedSpeed);
+                        setHighestSpeed((prev) => Math.max(prev, usedSpeed));
+                        setSpeedBreak(usedSpeed > 10);
+                    }
+
+                    lastLocation.current = { latitude, longitude };
+                    lastTimestamp.current = nowTs;
+                },
+                (err) => {
+                    setErrorMsg(err?.message ?? 'Location watch error');
+                }
+            );
+        } catch (e) {
+            setErrorMsg(e.message ?? String(e));
+        }
+    };
+
+    const stopTracking = async () => {
+        try {
+            if (locationSubscription.current) {
+                await locationSubscription.current.remove();
+                locationSubscription.current = null;
+            }
+            lastLocation.current = null;
+            lastTimestamp.current = null;
+        } catch (e) {
+            //ignore
+        }
+    };
 
     if (!fontsLoaded) {
         return (
@@ -89,65 +151,40 @@ const SpeedTracker = () => {
 
     return (
         <View style={[styles.container, { backgroundColor: speedBreak ? 'red' : '#0f0f0fff' }]}>
-            {/* <Text style={styles.highestSpeed}>
-                Найвища швидкість:{' '}
-                <Text style={styles.highestSpeed_hightlight}>
-                    {highestSpeed.toFixed(2)} м/сек
-                </Text>
-            </Text>
-            <TouchableOpacity onPress={() => setHighestSpeed(0)} style={styles.resetHighest}>
-                <Text>Скинути</Text>
-            </TouchableOpacity> */}
-
             {errorMsg ? (
                 <Text style={styles.error}>{errorMsg}</Text>
             ) : (
-                <Text style={styles.speed}>{speed.toFixed(2)} M/S</Text>
+                <Text style={styles.speed}>{speed.toFixed(2)} m/s</Text>
             )}
+
             {speedBreak && <Text style={styles.speedError}>⚠️ Перевищено допустиму швидкість!</Text>}
-            <TouchableOpacity
-                onPress={() => setStarted(!started)}
-                style={styles.startBtn}
-                activeOpacity={0.8}
-            >
+
+            <TouchableOpacity onPress={() => setStarted((s) => !s)} style={styles.startBtn} activeOpacity={0.8}>
                 <View style={styles.btnContent}>
-                    <MaterialIcons
-                        name={started ? "pause" : "play-arrow"}
-                        size={43}
-                        color="#f1f1f1ff"
-                        style={{ marginLeft: -5 }}
-                    />
-                    <Text style={styles.btnText}>{started ? "PAUSE" : "START"}</Text>
+                    <MaterialIcons name={started ? 'pause' : 'play-arrow'} size={43} color="#f1f1f1ff" style={{ marginLeft: -5 }} />
+                    <Text style={styles.btnText}>{started ? 'PAUSE' : 'START'}</Text>
                 </View>
             </TouchableOpacity>
 
             <View style={{ marginBottom: -160 }}>
-                <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65 }}>
-                    <View style={styles.row}>
-                        <View style={styles.statContainer}>
-                            <Text style={styles.statHightlighted}>{timePassed}s</Text>
-                            <Text style={styles.statText}>Time</Text>
-                        </View>
+                <View style={styles.statsRow}>
+                    <View style={styles.statContainer}>
+                        <Text style={styles.statHightlighted}>{timePassed}s</Text>
+                        <Text style={styles.statText}>Time</Text>
                     </View>
-                    <View style={styles.row}>
-                        <View style={styles.statContainer}>
-                            <Text style={styles.statHightlighted}>m/s</Text>
-                            <Text style={styles.statText}>Top speed</Text>
-                        </View>
+                    <View style={styles.statContainer}>
+                        <Text style={styles.statHightlighted}>{highestSpeed.toFixed(2)} m/s</Text>
+                        <Text style={styles.statText}>Top speed</Text>
                     </View>
                 </View>
-                <View style={{ alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65 }}>
-                    <View style={styles.row}>
-                        <View style={styles.statContainer}>
-                            <Text style={styles.statHightlighted}>m/s</Text>
-                            <Text style={styles.statText}>Avarage speed</Text>
-                        </View>
+                <View style={styles.statsRow}>
+                    <View style={styles.statContainer}>
+                        <Text style={styles.statHightlighted}>{averageSpeed.toFixed(2)} m/s</Text>
+                        <Text style={styles.statText}>Average</Text>
                     </View>
-                    <View style={styles.row}>
-                        <View style={styles.statContainer}>
-                            <Text style={styles.statHightlighted}>km</Text>
-                            <Text style={styles.statText}>Distance</Text>
-                        </View>
+                    <View style={styles.statContainer}>
+                        <Text style={styles.statHightlighted}>{(distance / 1000).toFixed(3)} km</Text>
+                        <Text style={styles.statText}>Distance</Text>
                     </View>
                 </View>
             </View>
@@ -160,62 +197,13 @@ const styles = StyleSheet.create({
     speed: { fontSize: 64, fontWeight: 'bold', fontFamily: 'GajrajOne_400Regular', color: '#f1f1f1ff' },
     error: { color: 'red', fontSize: 18, marginTop: 10 },
     speedError: { color: 'black', fontSize: 20, fontWeight: '600', marginTop: 10 },
-    highestSpeed: { fontSize: 18, marginBottom: 10, color: '#f1f1f1ff' },
-    highestSpeed_hightlight: { fontWeight: 'bold' },
-    resetHighest: {
-        marginVertical: 10,
-        backgroundColor: '#ff7a7a',
-        padding: 10,
-        borderRadius: 5,
-    },
-    btnContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    btnText: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#f1f1f1ff',
-        marginLeft: 5,
-    },
-    startBtn: {
-        width: 220,
-        height: 60,
-        backgroundColor: '#ff0e0eff',
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'row',
-        marginBottom: 50
-    },
-    row: {
-        flexDirection: "row",
-        justifyContent: "center",
-        marginBottom: 20,
-    },
-    statContainer: {
-        flexDirection: "column",
-        alignItems: "center",
-        marginHorizontal: 20,
-    },
-    statText: {
-        fontSize: 18,
-        color: "#d3d3d3ff",
-        marginVertical: 4,
-        fontWeight: "600",
-    },
-    statHightlighted: {
-        fontSize: 32,
-        fontWeight: "bold",
-        color: "#ff0e0ed5",
-    },
-    statContainer: {
-        flexDirection: 'column',
-        display: 'flex',
-        alignItems: 'center',
-    }
-
+    btnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+    btnText: { fontSize: 24, fontWeight: 'bold', color: '#f1f1f1ff', marginLeft: 5 },
+    startBtn: { width: 220, height: 60, backgroundColor: '#ff0e0eff', borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 50 },
+    statsRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65, marginBottom: 20 },
+    statContainer: { flexDirection: 'column', alignItems: 'center' },
+    statText: { fontSize: 18, color: '#d3d3d3ff', marginVertical: 4, fontWeight: '600' },
+    statHightlighted: { fontSize: 32, fontWeight: 'bold', color: '#ff0e0ed5' },
 });
 
 export default SpeedTracker;
