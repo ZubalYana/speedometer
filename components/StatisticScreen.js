@@ -18,7 +18,7 @@ export default function StatisticScreen({ speedHistory }) {
                     color='#f1f1f1ff'
                 />
                 <Text style={styles.text}>
-                    Live statistics & history
+                    Live statistics
                 </Text>
             </View>
             {speedHistory.length ?
@@ -31,6 +31,9 @@ export default function StatisticScreen({ speedHistory }) {
                     height={220}
                     yAxisSuffix=" m/s"
                     chartConfig={{
+                        backgroundColor: '#0f0f0fff',
+                        backgroundGradientFrom: '#0f0f0fff',
+                        backgroundGradientTo: '#0f0f0fff',
                         decimalPlaces: 2,
                         color: (opacity = 1) => `rgba(255, 14, 14, ${opacity})`,
                         labelColor: () => '#fff',
@@ -38,7 +41,7 @@ export default function StatisticScreen({ speedHistory }) {
                     style={styles.chart}
                 />
                 :
-                <Text style={{ color: '#f1f1f1ff', paddingHorizontal: 40, textAlign: 'center' }}>No data available for the chart so far. Start measuring your speed and take a look!</Text>
+                <Text style={{ color: '#f1f1f1ff', paddingHorizontal: 40, textAlign: 'center', marginTop: 10 }}>No data available for the chart so far. Start measuring your speed and take a look!</Text>
             }
 
         </View>
