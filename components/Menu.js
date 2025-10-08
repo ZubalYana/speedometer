@@ -22,7 +22,7 @@ export default function Menu({ currentPage, onChangePage }) {
                     >
                         <MaterialIcons
                             name={item.icon}
-                            size={38}
+                            size={35}
                             color={isActive ? '#ff0e0eff' : '#f1f1f1ff'}
                         />
                         <Text
@@ -58,6 +58,6 @@ const styles = StyleSheet.create({
         gap: 5,
     },
     menuText: {
-        fontSize: 12,
+        fontSize: 11,
     },
 });
