@@ -1,5 +1,10 @@
 import { View, Text, StyleSheet } from 'react-native';
-export default function StatisticScreen() {
+import { useEffect } from 'react';
+export default function StatisticScreen({ speedHistory }) {
+    useEffect(() => {
+        console.log('App speedHistory:', speedHistory);
+    }, [speedHistory]);
+
     return (
         <View style={styles.container}>
             <Text style={styles.text}>📊 Statistic Screen</Text>

@@ -7,13 +7,14 @@ import SettingsScreen from './components/SettingsScreen';
 import Menu from './components/Menu';
 export default function App() {
   const [currentPage, setCurrentPage] = useState('speed');
+  const [speedHistory, setSpeedHistory] = useState([])
 
   const renderPage = () => {
     switch (currentPage) {
       case 'speed':
-        return <SpeedTracker />;
+        return <SpeedTracker setSpeedHistory={setSpeedHistory} />;
       case 'statistic':
-        return <StatisticScreen />;
+        return <StatisticScreen speedHistory={speedHistory} />;
       case 'history':
         return <HistoryScreen />;
       case 'settings':

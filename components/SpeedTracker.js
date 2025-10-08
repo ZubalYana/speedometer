@@ -19,7 +19,7 @@ const haversineMeters = (lat1, lon1, lat2, lon2) => {
     return R * c;
 };
 
-const SpeedTracker = () => {
+const SpeedTracker = ({ setSpeedHistory }) => {
     const [fontsLoaded] = useFonts({ GajrajOne_400Regular });
     const [speed, setSpeed] = useState(0);
     const [highestSpeed, setHighestSpeed] = useState(0);
@@ -106,11 +106,17 @@ const SpeedTracker = () => {
                         setSpeed(usedSpeed);
                         setHighestSpeed((prev) => Math.max(prev, usedSpeed));
                         setSpeedBreak(usedSpeed > 1);
+                        if (typeof setSpeedHistory === 'function') {
+                            setSpeedHistory(prev => [...prev.slice(-59), usedSpeed]);
+                        }
                     } else {
                         const usedSpeed = (rawSpeed != null && rawSpeed >= 0) ? rawSpeed : 0;
                         setSpeed(usedSpeed);
                         setHighestSpeed((prev) => Math.max(prev, usedSpeed));
-                        setSpeedBreak(usedSpeed > 10);
+                        setSpeedBreak(usedSpeed > 1);
+                        if (typeof setSpeedHistory === 'function') {
+                            setSpeedHistory(prev => [...prev.slice(-59), usedSpeed]);
+                        }
                     }
 
                     lastLocation.current = { latitude, longitude };
