@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, GajrajOne_400Regular } from '@expo-google-fonts/gajraj-one';
 import { MaterialIcons } from '@expo/vector-icons';
 SplashScreen.preventAutoHideAsync();
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const haversineMeters = (lat1, lon1, lat2, lon2) => {
     const toRad = (v) => (v * Math.PI) / 180;
@@ -32,6 +33,20 @@ const SpeedTracker = ({ setSpeedHistory }) => {
     const locationSubscription = useRef(null);
     const lastLocation = useRef(null);
     const lastTimestamp = useRef(null);
+
+    const saveSpeedData = async (newSpeed) => {
+        try {
+            const newEntry = { speed: newSpeed, timestamp: Date.now() };
+
+            const existing = await AsyncStorage.getItem('speedHistory');
+            const parsed = existing ? JSON.parse(existing) : [];
+
+            parsed.push(newEntry);
+            await AsyncStorage.setItem('speedHistory', JSON.stringify(parsed));
+        } catch (err) {
+            console.error('Failed to save speed data:', err);
+        }
+    };
 
     useEffect(() => {
         if (fontsLoaded) SplashScreen.hideAsync();
@@ -109,6 +124,7 @@ const SpeedTracker = ({ setSpeedHistory }) => {
                         if (typeof setSpeedHistory === 'function') {
                             setSpeedHistory(prev => [...prev.slice(-59), usedSpeed]);
                         }
+                        saveSpeedData(usedSpeed);
                     } else {
                         const usedSpeed = (rawSpeed != null && rawSpeed >= 0) ? rawSpeed : 0;
                         setSpeed(usedSpeed);
@@ -117,6 +133,7 @@ const SpeedTracker = ({ setSpeedHistory }) => {
                         if (typeof setSpeedHistory === 'function') {
                             setSpeedHistory(prev => [...prev.slice(-59), usedSpeed]);
                         }
+                        saveSpeedData(usedSpeed);
                     }
 
                     lastLocation.current = { latitude, longitude };

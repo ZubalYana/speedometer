@@ -49,6 +49,6 @@ export default function StatisticScreen({ speedHistory }) {
 }
 const styles = StyleSheet.create({
     container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0f0f0fff', width: '100%' },
-    text: { color: '#f1f1f1ff', fontSize: 22, fontWeight: 700, marginTop: 5 },
+    text: { color: '#f1f1f1ff', fontSize: 22, fontWeight: 700, marginTop: 5, marginLeft: 2 },
     chart: { marginTop: 50 }
 });
