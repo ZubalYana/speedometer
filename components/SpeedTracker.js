@@ -32,6 +32,7 @@ const SpeedTracker = ({ setSpeedHistory }) => {
     const [speedBreak, setSpeedBreak] = useState(false);
     const [averageSpeed, setAverageSpeed] = useState(0);
     const [distance, setDistance] = useState(0);
+    const speedQueue = useRef([]);
 
     const locationSubscription = useRef(null);
     const lastLocation = useRef(null);
@@ -111,8 +112,8 @@ const SpeedTracker = ({ setSpeedHistory }) => {
                             longitude
                         );
                         const deltaSec = (nowTs - lastTimestamp.current) / 1000;
-                        const safeDelta = deltaSec > 0 ? deltaSec : 1;
-                        if (dist > 0.5) setDistance((d) => d + dist);
+                        const safeDelta = deltaSec > 1 ? deltaSec : 1;
+                        if (dist >= 2) setDistance((d) => d + dist);
 
                         const calcSpeed = dist / safeDelta;
                         const usedSpeed = rawSpeed != null && rawSpeed >= 0 ? rawSpeed : calcSpeed;
@@ -145,14 +146,18 @@ const SpeedTracker = ({ setSpeedHistory }) => {
         }
     };
 
-    const updateSpeed = (usedSpeed) => {
-        setSpeed(usedSpeed);
-        setHighestSpeed((prev) => Math.max(prev, usedSpeed));
-        setSpeedBreak(usedSpeed > 1);
+    const updateSpeed = (newSpeed) => {
+        speedQueue.current.push(newSpeed);
+        if (speedQueue.current.length > 3) speedQueue.current.shift();
+        const smoothSpeed = speedQueue.current.reduce((a, b) => a + b, 0) / speedQueue.current.length;
+
+        setSpeed(smoothSpeed);
+        setHighestSpeed((prev) => Math.max(prev, smoothSpeed));
+        setSpeedBreak(smoothSpeed > 1);
         if (typeof setSpeedHistory === 'function') {
-            setSpeedHistory((prev) => [...prev.slice(-59), usedSpeed]);
+            setSpeedHistory((prev) => [...prev.slice(-59), smoothSpeed]);
         }
-        saveSpeedData(usedSpeed);
+        saveSpeedData(smoothSpeed);
     };
 
     if (!fontsLoaded) {
