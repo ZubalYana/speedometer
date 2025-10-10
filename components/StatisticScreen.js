@@ -18,7 +18,6 @@ export default function StatisticScreen({ speedHistory }) {
             card: darkMode ? '#1a1a1a' : '#ffffff',
             text: darkMode ? '#f1f1f1' : '#111111',
             subText: darkMode ? '#bbb' : '#555',
-            border: darkMode ? '#f1f1f1' : '#222',
             accent: '#ff0e0e',
         }),
         [darkMode]
@@ -37,7 +36,7 @@ export default function StatisticScreen({ speedHistory }) {
             </View>
 
             {speedHistory.length ? (
-                <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
                     <LineChart
                         data={{
                             labels: Array(speedHistory.length).fill(''),
@@ -70,7 +69,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: 'center',
-        paddingTop: 60,
+        paddingTop: 90,
         paddingHorizontal: 20,
         width: '100%',
     },
@@ -80,7 +79,7 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     text: {
-        fontSize: 22,
+        fontSize: 26,
         fontWeight: '700',
         marginLeft: 8,
     },
@@ -89,13 +88,8 @@ const styles = StyleSheet.create({
     },
     chartCard: {
         borderRadius: 16,
-        borderWidth: 1,
         paddingVertical: 12,
         paddingHorizontal: 8,
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
     },
     chart: {
         borderRadius: 16,
