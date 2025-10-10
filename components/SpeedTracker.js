@@ -1,42 +1,21 @@
 import React, { useEffect, useState, useRef, useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import * as Location from 'expo-location';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, GajrajOne_400Regular } from '@expo-google-fonts/gajraj-one';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeContext } from '../App';
-
+import { SpeedContext } from '../contexts/SpeedContext';
 SplashScreen.preventAutoHideAsync();
 
-const haversineMeters = (lat1, lon1, lat2, lon2) => {
-    const toRad = (v) => (v * Math.PI) / 180;
-    const R = 6371000;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-};
 
 const SpeedTracker = ({ setSpeedHistory }) => {
     const [fontsLoaded] = useFonts({ GajrajOne_400Regular });
-    const [speed, setSpeed] = useState(0);
-    const [highestSpeed, setHighestSpeed] = useState(0);
     const [errorMsg, setErrorMsg] = useState(null);
-    const [started, setStarted] = useState(false);
-    const [timePassed, setTimePassed] = useState(0);
-    const [speedBreak, setSpeedBreak] = useState(false);
     const [averageSpeed, setAverageSpeed] = useState(0);
-    const [distance, setDistance] = useState(0);
-    const speedQueue = useRef([]);
+    const { startTracking, stopTracking } = useContext(SpeedContext);
 
-    const locationSubscription = useRef(null);
-    const lastLocation = useRef(null);
-    const lastTimestamp = useRef(null);
+    const { speed, highestSpeed, distance, timePassed, started, setStarted } = useContext(SpeedContext);
+    const { speedBreak } = useContext(SpeedContext);
 
     const { darkMode } = useContext(ThemeContext);
     const colors = useMemo(() => ({
@@ -48,117 +27,18 @@ const SpeedTracker = ({ setSpeedHistory }) => {
         accent: '#ff0e0e',
     }), [darkMode]);
 
-    const saveSpeedData = async (newSpeed) => {
-        try {
-            const newEntry = { speed: newSpeed, timestamp: Date.now() };
-            const existing = await AsyncStorage.getItem('speedHistory');
-            const parsed = existing ? JSON.parse(existing) : [];
-            parsed.push(newEntry);
-            await AsyncStorage.setItem('speedHistory', JSON.stringify(parsed));
-        } catch (err) {
-            console.error('Failed to save speed data:', err);
-        }
-    };
-
     useEffect(() => {
-        if (fontsLoaded) SplashScreen.hideAsync();
-    }, [fontsLoaded]);
+        if (started) startTracking();
+        else stopTracking();
 
-    useEffect(() => {
-        (async () => {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') setErrorMsg('Permission to access location was denied');
-        })();
-    }, []);
-
-    useEffect(() => {
-        let timer;
-        if (started) {
-            startTracking();
-            timer = setInterval(() => setTimePassed((t) => t + 1), 1000);
-        } else {
-            stopTracking();
-        }
-        return () => timer && clearInterval(timer);
+        return () => stopTracking();
     }, [started]);
+
 
     useEffect(() => {
         setAverageSpeed(timePassed > 0 ? distance / timePassed : 0);
     }, [distance, timePassed]);
 
-    const startTracking = async () => {
-        try {
-            if (locationSubscription.current) {
-                await locationSubscription.current.remove();
-                locationSubscription.current = null;
-            }
-
-            locationSubscription.current = await Location.watchPositionAsync(
-                {
-                    accuracy: Location.Accuracy.Highest,
-                    distanceInterval: 1,
-                    timeInterval: 1000,
-                },
-                (position) => {
-                    if (!position?.coords) return;
-                    const { latitude, longitude, speed: rawSpeed } = position.coords;
-                    const nowTs = position.timestamp ?? Date.now();
-
-                    if (lastLocation.current && lastTimestamp.current && latitude != null && longitude != null) {
-                        const dist = haversineMeters(
-                            lastLocation.current.latitude,
-                            lastLocation.current.longitude,
-                            latitude,
-                            longitude
-                        );
-                        const deltaSec = (nowTs - lastTimestamp.current) / 1000;
-                        const safeDelta = deltaSec > 1 ? deltaSec : 1;
-                        if (dist >= 2) setDistance((d) => d + dist);
-
-                        const calcSpeed = dist / safeDelta;
-                        const usedSpeed = rawSpeed != null && rawSpeed >= 0 ? rawSpeed : calcSpeed;
-                        updateSpeed(usedSpeed);
-                    } else {
-                        const usedSpeed = rawSpeed != null && rawSpeed >= 0 ? rawSpeed : 0;
-                        updateSpeed(usedSpeed);
-                    }
-
-                    lastLocation.current = { latitude, longitude };
-                    lastTimestamp.current = nowTs;
-                },
-                (err) => setErrorMsg(err?.message ?? 'Location watch error')
-            );
-        } catch (e) {
-            setErrorMsg(e.message ?? String(e));
-        }
-    };
-
-    const stopTracking = async () => {
-        try {
-            if (locationSubscription.current) {
-                await locationSubscription.current.remove();
-                locationSubscription.current = null;
-            }
-            lastLocation.current = null;
-            lastTimestamp.current = null;
-        } catch {
-            // ignore
-        }
-    };
-
-    const updateSpeed = (newSpeed) => {
-        speedQueue.current.push(newSpeed);
-        if (speedQueue.current.length > 3) speedQueue.current.shift();
-        const smoothSpeed = speedQueue.current.reduce((a, b) => a + b, 0) / speedQueue.current.length;
-
-        setSpeed(smoothSpeed);
-        setHighestSpeed((prev) => Math.max(prev, smoothSpeed));
-        setSpeedBreak(smoothSpeed > 1);
-        if (typeof setSpeedHistory === 'function') {
-            setSpeedHistory((prev) => [...prev.slice(-59), smoothSpeed]);
-        }
-        saveSpeedData(smoothSpeed);
-    };
 
     if (!fontsLoaded) {
         return (

@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     },
     noDataText: {
         textAlign: 'center',
-        marginTop: 20,
+        marginTop: -20,
         fontSize: 16,
         lineHeight: 22,
     },

@@ -5,7 +5,7 @@ import StatisticScreen from './components/StatisticScreen';
 import HistoryScreen from './components/HistoryScreen';
 import SettingsScreen from './components/SettingsScreen';
 import Menu from './components/Menu';
-
+import { SpeedProvider } from './contexts/SpeedContext';
 export const ThemeContext = createContext();
 export default function App() {
   const [currentPage, setCurrentPage] = useState('speed');
@@ -29,10 +29,12 @@ export default function App() {
 
   return (
     <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
-      <View style={styles.container}>
-        {renderPage()}
-        <Menu currentPage={currentPage} onChangePage={setCurrentPage} />
-      </View>
+      <SpeedProvider onNewSpeed={(newSpeed) => setSpeedHistory(prev => [...prev.slice(-59), newSpeed])}>
+        <View style={styles.container}>
+          {renderPage()}
+          <Menu currentPage={currentPage} onChangePage={setCurrentPage} />
+        </View>
+      </SpeedProvider>
     </ThemeContext.Provider>
   );
 }
