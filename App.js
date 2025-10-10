@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState, createContext, useContext } from 'react';
+import { StyleSheet, View } from 'react-native';
 import SpeedTracker from './components/SpeedTracker';
 import StatisticScreen from './components/StatisticScreen';
 import HistoryScreen from './components/HistoryScreen';
 import SettingsScreen from './components/SettingsScreen';
 import Menu from './components/Menu';
+
+export const ThemeContext = createContext();
 export default function App() {
   const [currentPage, setCurrentPage] = useState('speed');
-  const [speedHistory, setSpeedHistory] = useState([])
+  const [speedHistory, setSpeedHistory] = useState([]);
+  const [darkMode, setDarkMode] = useState(true);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -25,10 +28,12 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
-      {renderPage()}
-      <Menu currentPage={currentPage} onChangePage={setCurrentPage} />
-    </View>
+    <ThemeContext.Provider value={{ darkMode, setDarkMode }}>
+      <View style={styles.container}>
+        {renderPage()}
+        <Menu currentPage={currentPage} onChangePage={setCurrentPage} />
+      </View>
+    </ThemeContext.Provider>
   );
 }
 

@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, GajrajOne_400Regular } from '@expo-google-fonts/gajraj-one';
 import { MaterialIcons } from '@expo/vector-icons';
-SplashScreen.preventAutoHideAsync();
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeContext } from '../App';
+
+SplashScreen.preventAutoHideAsync();
 
 const haversineMeters = (lat1, lon1, lat2, lon2) => {
     const toRad = (v) => (v * Math.PI) / 180;
@@ -13,9 +15,9 @@ const haversineMeters = (lat1, lon1, lat2, lon2) => {
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
     const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.sin(dLat / 2) ** 2 +
         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 };
@@ -30,17 +32,26 @@ const SpeedTracker = ({ setSpeedHistory }) => {
     const [speedBreak, setSpeedBreak] = useState(false);
     const [averageSpeed, setAverageSpeed] = useState(0);
     const [distance, setDistance] = useState(0);
+
     const locationSubscription = useRef(null);
     const lastLocation = useRef(null);
     const lastTimestamp = useRef(null);
 
+    const { darkMode } = useContext(ThemeContext);
+    const colors = useMemo(() => ({
+        bg: darkMode ? '#0f0f0f' : '#f9f9f9',
+        card: darkMode ? '#1a1a1a' : '#ffffff',
+        text: darkMode ? '#f1f1f1' : '#111111',
+        subText: darkMode ? '#bbb' : '#555',
+        border: darkMode ? '#f1f1f1' : '#222',
+        accent: '#ff0e0e',
+    }), [darkMode]);
+
     const saveSpeedData = async (newSpeed) => {
         try {
             const newEntry = { speed: newSpeed, timestamp: Date.now() };
-
             const existing = await AsyncStorage.getItem('speedHistory');
             const parsed = existing ? JSON.parse(existing) : [];
-
             parsed.push(newEntry);
             await AsyncStorage.setItem('speedHistory', JSON.stringify(parsed));
         } catch (err) {
@@ -55,9 +66,7 @@ const SpeedTracker = ({ setSpeedHistory }) => {
     useEffect(() => {
         (async () => {
             const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setErrorMsg('Permission to access location was denied');
-            }
+            if (status !== 'granted') setErrorMsg('Permission to access location was denied');
         })();
     }, []);
 
@@ -69,17 +78,11 @@ const SpeedTracker = ({ setSpeedHistory }) => {
         } else {
             stopTracking();
         }
-        return () => {
-            if (timer) clearInterval(timer);
-        };
+        return () => timer && clearInterval(timer);
     }, [started]);
 
     useEffect(() => {
-        if (timePassed > 0) {
-            setAverageSpeed(distance / timePassed);
-        } else {
-            setAverageSpeed(0);
-        }
+        setAverageSpeed(timePassed > 0 ? distance / timePassed : 0);
     }, [distance, timePassed]);
 
     const startTracking = async () => {
@@ -96,7 +99,7 @@ const SpeedTracker = ({ setSpeedHistory }) => {
                     timeInterval: 1000,
                 },
                 (position) => {
-                    if (!position || !position.coords) return;
+                    if (!position?.coords) return;
                     const { latitude, longitude, speed: rawSpeed } = position.coords;
                     const nowTs = position.timestamp ?? Date.now();
 
@@ -107,41 +110,22 @@ const SpeedTracker = ({ setSpeedHistory }) => {
                             latitude,
                             longitude
                         );
-
                         const deltaSec = (nowTs - lastTimestamp.current) / 1000;
                         const safeDelta = deltaSec > 0 ? deltaSec : 1;
+                        if (dist > 0.5) setDistance((d) => d + dist);
 
-                        if (dist > 0.5) {
-                            setDistance((d) => d + dist);
-                        }
-
-                        let calcSpeed = dist / safeDelta;
-                        const usedSpeed = (rawSpeed != null && rawSpeed >= 0) ? rawSpeed : calcSpeed;
-
-                        setSpeed(usedSpeed);
-                        setHighestSpeed((prev) => Math.max(prev, usedSpeed));
-                        setSpeedBreak(usedSpeed > 1);
-                        if (typeof setSpeedHistory === 'function') {
-                            setSpeedHistory(prev => [...prev.slice(-59), usedSpeed]);
-                        }
-                        saveSpeedData(usedSpeed);
+                        const calcSpeed = dist / safeDelta;
+                        const usedSpeed = rawSpeed != null && rawSpeed >= 0 ? rawSpeed : calcSpeed;
+                        updateSpeed(usedSpeed);
                     } else {
-                        const usedSpeed = (rawSpeed != null && rawSpeed >= 0) ? rawSpeed : 0;
-                        setSpeed(usedSpeed);
-                        setHighestSpeed((prev) => Math.max(prev, usedSpeed));
-                        setSpeedBreak(usedSpeed > 1);
-                        if (typeof setSpeedHistory === 'function') {
-                            setSpeedHistory(prev => [...prev.slice(-59), usedSpeed]);
-                        }
-                        saveSpeedData(usedSpeed);
+                        const usedSpeed = rawSpeed != null && rawSpeed >= 0 ? rawSpeed : 0;
+                        updateSpeed(usedSpeed);
                     }
 
                     lastLocation.current = { latitude, longitude };
                     lastTimestamp.current = nowTs;
                 },
-                (err) => {
-                    setErrorMsg(err?.message ?? 'Location watch error');
-                }
+                (err) => setErrorMsg(err?.message ?? 'Location watch error')
             );
         } catch (e) {
             setErrorMsg(e.message ?? String(e));
@@ -156,86 +140,95 @@ const SpeedTracker = ({ setSpeedHistory }) => {
             }
             lastLocation.current = null;
             lastTimestamp.current = null;
-        } catch (e) {
-            //ignore
+        } catch {
+            // ignore
         }
+    };
+
+    const updateSpeed = (usedSpeed) => {
+        setSpeed(usedSpeed);
+        setHighestSpeed((prev) => Math.max(prev, usedSpeed));
+        setSpeedBreak(usedSpeed > 1);
+        if (typeof setSpeedHistory === 'function') {
+            setSpeedHistory((prev) => [...prev.slice(-59), usedSpeed]);
+        }
+        saveSpeedData(usedSpeed);
     };
 
     if (!fontsLoaded) {
         return (
-            <View style={styles.container}>
-                <ActivityIndicator size="large" />
-                <Text>Loading font...</Text>
+            <View style={[styles.container, { backgroundColor: colors.bg }]}>
+                <ActivityIndicator size="large" color={colors.accent} />
+                <Text style={[styles.loadingText, { color: colors.text }]}>Loading font...</Text>
             </View>
         );
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: speedBreak ? 'red' : '#0f0f0fff' }]}>
+        <View style={[
+            styles.container,
+            { backgroundColor: speedBreak ? colors.accent : colors.bg }
+        ]}>
             {errorMsg ? (
-                <Text style={styles.error}>{errorMsg}</Text>
+                <Text style={[styles.error, { color: colors.accent }]}>{errorMsg}</Text>
             ) : (
-                <Text style={styles.speed}>
-                    {speed < 1000 ?
-                        speed.toFixed(2) + 'm/s'
-                        :
-                        (speed / 1000).toFixed(2) + 'k/h'
-                    }
+                <Text style={[styles.speed, { color: colors.text }]}>
+                    {speed < 1000 ? `${speed.toFixed(2)} m/s` : `${(speed / 1000).toFixed(2)} k/h`}
                 </Text>
             )}
 
-            {speedBreak && <Text style={styles.speedError}>⚠️ Перевищено допустиму швидкість!</Text>}
+            {speedBreak && (
+                <Text style={[styles.speedError, { color: darkMode ? colors.card : colors.text }]}>
+                    ⚠️ Перевищено допустиму швидкість!
+                </Text>
+            )}
 
-            <TouchableOpacity onPress={() => setStarted((s) => !s)} style={styles.startBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+                onPress={() => setStarted((s) => !s)}
+                style={[styles.startBtn, { backgroundColor: colors.accent }]}
+                activeOpacity={0.8}
+            >
                 <View style={styles.btnContent}>
-                    <MaterialIcons name={started ? 'pause' : 'play-arrow'} size={43} color="#f1f1f1ff" style={{ marginLeft: -5 }} />
-                    <Text style={styles.btnText}>{started ? 'PAUSE' : 'START'}</Text>
+                    <MaterialIcons
+                        name={started ? 'pause' : 'play-arrow'}
+                        size={43}
+                        color={colors.text}
+                        style={{ marginLeft: -5 }}
+                    />
+                    <Text style={[styles.btnText, { color: colors.text }]}>
+                        {started ? 'PAUSE' : 'START'}
+                    </Text>
                 </View>
             </TouchableOpacity>
 
             <View style={{ marginBottom: -100 }}>
                 <View style={styles.statsRow}>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>
-                            {timePassed < 60 ?
-                                timePassed + 's'
-                                :
-                                (timePassed / 60).toFixed(1) + 'min'
-                            }
+                        <Text style={[styles.statHighlighted, { color: colors.accent }]}>
+                            {timePassed < 60 ? `${timePassed}s` : `${(timePassed / 60).toFixed(1)}min`}
                         </Text>
-                        <Text style={styles.statText}>Time</Text>
+                        <Text style={[styles.statText, { color: colors.subText }]}>Time</Text>
                     </View>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>
-                            {highestSpeed < 1000 ?
-                                highestSpeed.toFixed(2) + 'm/s'
-                                :
-                                (highestSpeed / 1000).toFixed(2) + 'k/h'
-                            }
+                        <Text style={[styles.statHighlighted, { color: colors.accent }]}>
+                            {highestSpeed < 1000 ? `${highestSpeed.toFixed(2)}m/s` : `${(highestSpeed / 1000).toFixed(2)}k/h`}
                         </Text>
-                        <Text style={styles.statText}>Top speed</Text>
+                        <Text style={[styles.statText, { color: colors.subText }]}>Top speed</Text>
                     </View>
                 </View>
+
                 <View style={styles.statsRow}>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>
-                            {averageSpeed < 1000 ?
-                                averageSpeed.toFixed(2) + 'm/s'
-                                :
-                                (averageSpeed / 1000).toFixed(2) + 'k/h'
-                            }
+                        <Text style={[styles.statHighlighted, { color: colors.accent }]}>
+                            {averageSpeed < 1000 ? `${averageSpeed.toFixed(2)}m/s` : `${(averageSpeed / 1000).toFixed(2)}k/h`}
                         </Text>
-                        <Text style={styles.statText}>Average</Text>
+                        <Text style={[styles.statText, { color: colors.subText }]}>Average</Text>
                     </View>
                     <View style={styles.statContainer}>
-                        <Text style={styles.statHightlighted}>
-                            {distance < 100 ?
-                                distance.toFixed(2) + 'm'
-                                :
-                                (distance / 1000).toFixed(2) + 'km'
-                            }
+                        <Text style={[styles.statHighlighted, { color: colors.accent }]}>
+                            {distance < 100 ? `${distance.toFixed(2)}m` : `${(distance / 1000).toFixed(2)}km`}
                         </Text>
-                        <Text style={styles.statText}>Distance</Text>
+                        <Text style={[styles.statText, { color: colors.subText }]}>Distance</Text>
                     </View>
                 </View>
             </View>
@@ -244,17 +237,71 @@ const SpeedTracker = ({ setSpeedHistory }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', position: 'relative' },
-    speed: { fontSize: 64, fontWeight: 'bold', fontFamily: 'GajrajOne_400Regular', color: '#f1f1f1ff' },
-    error: { color: 'red', fontSize: 18, marginTop: 10 },
-    speedError: { color: 'black', fontSize: 20, fontWeight: '600', marginTop: 10 },
-    btnContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-    btnText: { fontSize: 24, fontWeight: 'bold', color: '#f1f1f1ff', marginLeft: 5 },
-    startBtn: { width: 220, height: 60, backgroundColor: '#ff0e0eff', borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', marginBottom: 50 },
-    statsRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', width: '100%', paddingHorizontal: 65, marginBottom: 20 },
-    statContainer: { flexDirection: 'column', alignItems: 'center' },
-    statText: { fontSize: 18, color: '#d3d3d3ff', marginVertical: 4, fontWeight: '600' },
-    statHightlighted: { fontSize: 32, fontWeight: 'bold', color: '#ff0e0ed5' },
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '100%',
+        position: 'relative',
+    },
+    speed: {
+        fontSize: 64,
+        fontWeight: 'bold',
+        fontFamily: 'GajrajOne_400Regular',
+    },
+    error: {
+        fontSize: 18,
+        marginTop: 10,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 16,
+    },
+    speedError: {
+        fontSize: 20,
+        fontWeight: '600',
+        marginTop: 10,
+    },
+    btnContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    btnText: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginLeft: 5,
+    },
+    startBtn: {
+        width: 220,
+        height: 60,
+        borderRadius: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        marginBottom: 50,
+    },
+    statsRow: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        paddingHorizontal: 65,
+        marginBottom: 20,
+    },
+    statContainer: {
+        flexDirection: 'column',
+        alignItems: 'center',
+    },
+    statText: {
+        fontSize: 18,
+        marginVertical: 4,
+        fontWeight: '600',
+    },
+    statHighlighted: {
+        fontSize: 32,
+        fontWeight: 'bold',
+    },
 });
 
 export default SpeedTracker;

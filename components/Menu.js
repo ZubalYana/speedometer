@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { ThemeContext } from '../App';
+import { useContext, useMemo } from 'react';
 
 export default function Menu({ currentPage, onChangePage }) {
     const menuItems = [
@@ -9,8 +11,19 @@ export default function Menu({ currentPage, onChangePage }) {
         { key: 'settings', label: 'Settings', icon: 'settings' },
     ];
 
+    const { darkMode } = useContext(ThemeContext);
+
+    const colors = useMemo(() => ({
+        bg: darkMode ? '#101010' : '#f1f1f1',
+        card: darkMode ? '#1a1a1a' : '#ffffff',
+        text: darkMode ? '#eaeaea' : '#111111',
+        inactive: darkMode ? '#8b8b8b' : '#555555',
+        accent: '#ff0e0e',
+        shadow: darkMode ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.15)',
+    }), [darkMode]);
+
     return (
-        <View style={styles.menu}>
+        <View style={[styles.menu, { backgroundColor: colors.card, shadowColor: colors.shadow }]}>
             {menuItems.map((item) => {
                 const isActive = currentPage === item.key;
                 return (
@@ -22,13 +35,13 @@ export default function Menu({ currentPage, onChangePage }) {
                     >
                         <MaterialIcons
                             name={item.icon}
-                            size={35}
-                            color={isActive ? '#ff0e0eff' : '#f1f1f1ff'}
+                            size={32}
+                            color={isActive ? colors.accent : colors.inactive}
                         />
                         <Text
                             style={[
                                 styles.menuText,
-                                { color: isActive ? '#ff0e0eff' : '#f1f1f1ff' },
+                                { color: isActive ? colors.accent : colors.text },
                             ]}
                         >
                             {item.label}
@@ -43,21 +56,29 @@ export default function Menu({ currentPage, onChangePage }) {
 const styles = StyleSheet.create({
     menu: {
         width: '100%',
-        height: 110,
-        backgroundColor: '#1c1c1cff',
+        height: 95,
         position: 'absolute',
         bottom: 0,
         left: 0,
-        paddingTop: 10,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 40,
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        paddingBottom: 10,
+        paddingHorizontal: 15,
+        borderTopWidth: 0.5,
+        borderColor: '#444',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 8,
     },
     menuOption: {
         alignItems: 'center',
-        gap: 5,
+        justifyContent: 'center',
+        gap: 4,
     },
     menuText: {
         fontSize: 11,
+        fontWeight: '500',
     },
 });

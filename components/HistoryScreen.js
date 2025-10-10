@@ -1,12 +1,14 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ThemeContext } from '../App';
 
 export default function HistoryScreen() {
     const [history, setHistory] = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [activeFilter, setActiveFilter] = useState('day');
+    const { darkMode } = useContext(ThemeContext);
 
     useEffect(() => {
         const loadData = async () => {
@@ -56,10 +58,90 @@ export default function HistoryScreen() {
         addMockData();
     }, []);
 
+    const colors = useMemo(() => ({
+        bg: darkMode ? '#0f0f0f' : '#f9f9f9',
+        card: darkMode ? '#1a1a1a' : '#ffffff',
+        text: darkMode ? '#f1f1f1' : '#111111',
+        subText: darkMode ? '#bbb' : '#555',
+        border: darkMode ? '#f1f1f1' : '#222',
+        accent: '#ff0e0e',
+    }), [darkMode]);
+
+    const styles = useMemo(() => StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: colors.bg,
+            paddingTop: 90,
+            alignItems: 'center',
+            width: '100%',
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: 20,
+        },
+        title: {
+            color: colors.text,
+            fontSize: 26,
+            marginLeft: 8,
+            fontWeight: '700',
+        },
+        filterContainer: {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            marginBottom: 20,
+        },
+        filterBtn: {
+            paddingVertical: 8,
+            paddingHorizontal: 18,
+            borderRadius: 20,
+            borderWidth: 1,
+            borderColor: colors.border,
+            marginHorizontal: 5,
+            backgroundColor: 'transparent',
+        },
+        filterBtnActive: {
+            backgroundColor: colors.accent,
+            borderColor: colors.accent,
+        },
+        filterText: {
+            color: colors.text,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        filterTextActive: {
+            color: colors.bg,
+        },
+        item: {
+            backgroundColor: colors.card,
+            padding: 15,
+            borderRadius: 10,
+            marginVertical: 6,
+            width: '90%',
+            borderWidth: 1,
+            borderColor: darkMode ? '#222' : '#ddd',
+        },
+        speedText: {
+            color: colors.accent,
+            fontSize: 18,
+            fontWeight: 'bold',
+        },
+        timestamp: {
+            color: colors.subText,
+            fontSize: 14,
+            marginTop: 4,
+        },
+        noData: {
+            color: colors.subText,
+            fontSize: 16,
+            marginTop: 40,
+        },
+    }), [colors]);
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <MaterialIcons name="history" size={35} color="#f1f1f1" />
+                <MaterialIcons name="history" size={35} color={colors.text} />
                 <Text style={styles.title}>History</Text>
             </View>
 
@@ -88,7 +170,10 @@ export default function HistoryScreen() {
             {filtered.length === 0 ? (
                 <Text style={styles.noData}>No data for this period</Text>
             ) : (
-                <ScrollView style={{ width: '100%' }} contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
+                <ScrollView
+                    style={{ width: '100%' }}
+                    contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}
+                >
                     {filtered.map((item, index) => (
                         <View key={index} style={styles.item}>
                             <Text style={styles.speedText}>
@@ -104,71 +189,3 @@ export default function HistoryScreen() {
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#0f0f0fff',
-        paddingTop: 90,
-        alignItems: 'center',
-        width: '100%',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    title: {
-        color: '#f1f1f1ff',
-        fontSize: 26,
-        marginLeft: 8,
-        fontWeight: '700',
-    },
-    filterContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginBottom: 20,
-    },
-    filterBtn: {
-        paddingVertical: 8,
-        paddingHorizontal: 18,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#f1f1f1ff',
-        marginHorizontal: 5,
-    },
-    filterBtnActive: {
-        backgroundColor: '#ff0e0eff',
-        borderColor: '#ff0e0eff',
-    },
-    filterText: {
-        color: '#f1f1f1ff',
-        fontSize: 16,
-        fontWeight: '600',
-    },
-    filterTextActive: {
-        color: '#0f0f0fff',
-    },
-    item: {
-        backgroundColor: '#1a1a1a',
-        padding: 15,
-        borderRadius: 10,
-        marginVertical: 6,
-        width: '90%',
-    },
-    speedText: {
-        color: '#ff0e0eff',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    timestamp: {
-        color: '#bbb',
-        fontSize: 14,
-        marginTop: 4,
-    },
-    noData: {
-        color: '#aaa',
-        fontSize: 16,
-        marginTop: 40,
-    },
-});
